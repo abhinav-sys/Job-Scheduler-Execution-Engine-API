@@ -1,0 +1,12 @@
+# Deploy to Render: connect this repo at render.com → New → Blueprint → add DATABASE_URL (your Neon URL)
+services:
+  - type: web
+    runtime: docker
+    name: job-scheduler-api
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: PORT
+        value: "10000"
+      - key: DATABASE_URL
+        sync: false
+    healthCheckPath: /health

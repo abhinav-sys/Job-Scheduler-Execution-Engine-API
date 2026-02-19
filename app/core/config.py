@@ -5,12 +5,21 @@ from pydantic_settings import BaseSettings, SettingsConfigDict  # type: ignore[i
 
 
 def _normalize_database_url(url: str) -> str:
-    """Use asyncpg driver; accept postgres:// from Render/Neon etc."""
+    """Use asyncpg driver; accept postgres:// from Render/Neon etc. Strips sslmode (asyncpg uses ssl in connect_args)."""
     u = (url or "").strip()
     if u.startswith("postgres://"):
-        return "postgresql+asyncpg://" + u[11:]
-    if u.startswith("postgresql://") and "+asyncpg" not in u:
-        return u.replace("postgresql://", "postgresql+asyncpg://", 1)
+        u = "postgresql+asyncpg://" + u[11:]
+    elif u.startswith("postgresql://") and "+asyncpg" not in u:
+        u = u.replace("postgresql://", "postgresql+asyncpg://", 1)
+    # asyncpg does not accept sslmode= in URL; we use connect_args ssl in session.py
+    if "?" in u:
+        from urllib.parse import urlparse, urlunparse, parse_qs, urlencode
+        parsed = urlparse(u)
+        qs = parse_qs(parsed.query)
+        qs.pop("sslmode", None)
+        qs.pop("channel_binding", None)
+        new_query = urlencode(qs, doseq=True)
+        u = urlunparse(parsed._replace(query=new_query))
     return u
 
 

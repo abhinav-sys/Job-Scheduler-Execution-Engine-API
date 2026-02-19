@@ -1,0 +1,10 @@
+# Override to use Neon DB. Run: $env:NEON_URL="postgresql://..."; docker-compose -f docker-compose.yml -f docker-compose.neon.yml up -d api worker
+services:
+  api:
+    environment:
+      DATABASE_URL: ${NEON_URL}
+    depends_on: []
+  worker:
+    environment:
+      DATABASE_URL: ${NEON_URL}
+    depends_on: []

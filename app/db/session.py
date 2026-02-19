@@ -3,11 +3,13 @@ from collections.abc import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from app.core.config import get_database_url
+from app.core.config import get_database_url, settings
 from app.models.base import Base
 
-# Normalized URL (postgres:// → postgresql+asyncpg://) for Render/Neon
+# Normalized URL (postgres:// → postgresql+asyncpg; sslmode stripped for asyncpg)
 _db_url = get_database_url()
+# Neon and others need SSL; asyncpg expects ssl=True not sslmode in URL
+_need_ssl = "neon.tech" in (settings.DATABASE_URL or "") or "sslmode=require" in (settings.DATABASE_URL or "").lower()
 
 engine = create_async_engine(
     _db_url,
@@ -15,6 +17,7 @@ engine = create_async_engine(
     pool_pre_ping=True,
     pool_size=5,
     max_overflow=10,
+    connect_args={"ssl": True} if _need_ssl else {},
 )
 
 async_session_factory = async_sessionmaker(

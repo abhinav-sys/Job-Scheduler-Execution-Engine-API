@@ -1,7 +1,7 @@
 # Fly.io: API (use this when deploying from GitHub or fly launch).
 # Worker: use fly deploy --config fly.worker.toml
 
-app = "job-scheduler-execution-engine-api"
+app = "job-scheduler-api"
 
 [build]
   dockerfile = "Dockerfile"
