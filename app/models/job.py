@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from typing import Any, Dict, Optional
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Integer, Text, func
+from sqlalchemy import DateTime, Enum, ForeignKey, Integer, Text, TypeDecorator, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -14,6 +14,34 @@ from app.models.base import Base
 class ScheduleType(str, enum.Enum):
     ONE_TIME = "one_time"
     INTERVAL = "interval"
+
+
+class ScheduleTypeColumn(TypeDecorator[str]):
+    """Forces ScheduleType to be stored as its .value ('one_time'/'interval') in PostgreSQL."""
+
+    impl = Text
+    cache_ok = True
+
+    def load_dialect_impl(self, dialect):
+        if dialect.name == "postgresql":
+            return dialect.type_descriptor(
+                Enum(ScheduleType, name="scheduletype", create_type=False, values_callable=lambda x: [e.value for e in x])
+            )
+        return dialect.type_descriptor(Text())
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return None
+        if isinstance(value, ScheduleType):
+            return value.value
+        return value
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return None
+        if isinstance(value, ScheduleType):
+            return value
+        return ScheduleType(value) if value else None
 
 
 class JobStatus(str, enum.Enum):
@@ -39,13 +67,14 @@ class Job(Base):
     name: Mapped[str] = mapped_column(Text, nullable=False, index=True)
     payload: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSONB, nullable=True)
     schedule_type: Mapped[ScheduleType] = mapped_column(
-        Enum(ScheduleType), nullable=False
+        ScheduleTypeColumn(),
+        nullable=False,
     )
     run_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     interval_seconds: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     max_retries: Mapped[int] = mapped_column(Integer, nullable=False, default=3)
     status: Mapped[JobStatus] = mapped_column(
-        Enum(JobStatus), nullable=False, default=JobStatus.SCHEDULED, index=True
+        Enum(JobStatus, values_callable=lambda x: [e.value for e in x]), nullable=False, default=JobStatus.SCHEDULED, index=True
     )
     retry_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(
@@ -81,7 +110,7 @@ class JobExecution(Base):
         DateTime(timezone=True), nullable=True
     )
     status: Mapped[ExecutionStatus] = mapped_column(
-        Enum(ExecutionStatus), nullable=False
+        Enum(ExecutionStatus, values_callable=lambda x: [e.value for e in x]), nullable=False
     )
     error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     result: Mapped[Optional[str]] = mapped_column(Text, nullable=True)

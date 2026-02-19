@@ -2,9 +2,9 @@
 import asyncio
 from logging.config import fileConfig
 
-from alembic import context
-from sqlalchemy.engine import Connection
-from sqlalchemy.ext.asyncio import create_async_engine
+from alembic import context  # type: ignore[reportMissingImports]
+from sqlalchemy.engine import Connection  # type: ignore[reportMissingImports]
+from sqlalchemy.ext.asyncio import create_async_engine  # type: ignore[reportMissingImports]
 
 from app.core.config import get_database_url
 from app.models.base import Base

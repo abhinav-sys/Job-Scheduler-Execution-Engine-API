@@ -115,6 +115,10 @@ Use the **same** Neon URL (with your password) for: local migrations, Vercel env
 
 ## If something breaks
 
+- **Vercel – Internal server error (500):**
+  1. In Vercel → Project → **Settings** → **Environment Variables**, ensure **DATABASE_URL** is set to your full Neon URL (no extra spaces). Use the same URL you used for `alembic upgrade head`.
+  2. Open **https://your-project.vercel.app/health/db** in the browser. If DB is failing, you’ll see `503` and a `detail` message (e.g. connection refused, wrong password).
+  3. To see the real error in API responses, add env **DEBUG** = `1` in Vercel, redeploy, then trigger the failing request again; the JSON will include a `debug` field. Remove DEBUG after fixing.
 - **Vercel:** “Application not found” → Use root **index.py** and rewrite to `"/"`. Check [Vercel FastAPI docs](https://vercel.com/docs/frameworks/backend/fastapi).
 - **Fly.io:** Crashes or “connection refused” → Run `fly logs`; fix `DATABASE_URL` and/or run migrations on Neon.
 - **Neon:** “too many connections” → Use the **pooler** host (e.g. `-pooler` in the hostname); the URL above already uses it.

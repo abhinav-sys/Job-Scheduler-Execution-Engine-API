@@ -48,6 +48,7 @@ class Settings(BaseSettings):
     # API
     API_TITLE: str = "Job Scheduler & Execution Engine"
     API_VERSION: str = "1.0.0"
+    DEBUG: bool = False  # If True, 500 responses include error detail (set in Vercel for debugging)
 
 
 @lru_cache

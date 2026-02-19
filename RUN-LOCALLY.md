@@ -1,9 +1,10 @@
 # Run locally (before deploy)
 
 1. **Set the database URL**
-   - Open `.env` in the project root.
-   - Replace `DATABASE_URL` with your real Postgres URL (e.g. from [Neon](https://neon.tech) dashboard).
-   - Use the **async** form: `postgresql+asyncpg://USER:PASSWORD@HOST/DB?sslmode=require`.
+   - Open `.env` in the project root (copy from `.env.example` if needed).
+   - Set `DATABASE_URL` to your real Postgres URL (e.g. from [Neon](https://neon.tech) dashboard).
+   - **To see the same data as live:** use the **same Neon URL** in `.env` as you set in Vercel. If you use a different URL (e.g. local Postgres or leave default), local will show different data than production.
+   - Use the **async** form: `postgresql+asyncpg://USER:PASSWORD@HOST/DB?sslmode=require` (or paste Neon’s `postgresql://...` URL; the app converts it).
 
 2. **Start the API**
    - In PowerShell, from the project folder:
