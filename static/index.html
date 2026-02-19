@@ -175,6 +175,11 @@
 
   <script>
     const API = '/api';
+
+    async function parseResponse(r) {
+      const text = await r.text();
+      try { return JSON.parse(text); } catch (_) { return { _raw: text }; }
+    }
     const scheduleType = document.getElementById('scheduleType');
     const runAtRow = document.getElementById('runAtRow');
     const intervalRow = document.getElementById('intervalRow');
@@ -222,10 +227,10 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
         });
-        const data = await r.json();
+        const data = await parseResponse(r);
         if (!r.ok) {
-          const msg = data.detail?.map?.(d => d.msg).join(' ') || data.detail || 'Request failed';
-          statusEl.textContent = msg;
+          const msg = data.detail?.map?.(d => d.msg).join(' ') || data.detail || data._raw || ('Request failed ' + r.status);
+          statusEl.textContent = String(msg).slice(0, 200);
           return;
         }
         statusEl.textContent = 'Created: ' + data.id;
@@ -266,9 +271,10 @@
       if (filter) url += '&status=' + encodeURIComponent(filter);
       try {
         const r = await fetch(url);
-        const data = await r.json();
+        const data = await parseResponse(r);
         if (!r.ok) {
-          el.innerHTML = '<span class="error-msg">Failed to load: ' + (data.detail || r.status) + '</span>';
+          const err = data.detail || data._raw || r.status;
+          el.innerHTML = '<span class="error-msg">Failed to load: ' + escapeHtml(String(err).slice(0, 150)) + '</span>';
           return;
         }
         const jobs = data.jobs || [];
@@ -319,8 +325,8 @@
           body: JSON.stringify({ status }),
         });
         if (!r.ok) {
-          const data = await r.json();
-          alert(data.detail || r.status);
+          const data = await parseResponse(r);
+          alert(data.detail || data._raw || r.status);
           return;
         }
         loadJobs();
@@ -334,8 +340,8 @@
       try {
         const r = await fetch(API + '/jobs/' + jobId, { method: 'DELETE' });
         if (!r.ok) {
-          const data = await r.json().catch(() => ({}));
-          alert(data.detail || r.status);
+          const data = await parseResponse(r);
+          alert(data.detail || data._raw || r.status);
           return;
         }
         loadJobs();
@@ -360,9 +366,11 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name, schedule_type: 'interval', interval_seconds: 5, max_retries: 3 }),
         });
-        const data = await r.json();
+        const data = await parseResponse(r);
         if (!r.ok) {
-          statusEl.textContent = 'Failed: ' + (data.detail?.map?.(d => d.msg).join(' ') || data.detail || r.status);
+          const msg = data.detail?.map?.(d => d.msg).join(' ') || data.detail || data._raw || r.status;
+          statusEl.textContent = 'Failed: ' + String(msg).slice(0, 150);
+          statusEl.style.color = 'var(--error)';
           return;
         }
         statusEl.textContent = 'Test job created. Auto-refreshing every 2s for 20s…';

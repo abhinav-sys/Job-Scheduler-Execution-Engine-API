@@ -31,6 +31,20 @@ Do this once to get a **public URL** (e.g. `https://job-scheduler-api.onrender.c
 
 **Note:** On the free tier the service may sleep after inactivity; the first open can take a few seconds to wake.
 
+### If you see "password authentication failed for user 'neondb_owner'"
+
+The **DATABASE_URL** in Render is wrong (usually the password):
+
+1. **Get a fresh connection string** from the [Neon dashboard](https://console.neon.tech): your project → **Connection string** → copy the **pooled** URL (not the direct one).
+2. If your password has **special characters** (`@`, `#`, `/`, `%`, `?`, etc.), they must be **URL-encoded** in the connection string:
+   - `@` → `%40`
+   - `#` → `%23`
+   - `/` → `%2F`
+   - `%` → `%25`
+   - Or in Neon: use **Reset password** and pick a password without special characters, then copy the new URL.
+3. In Render: **Dashboard** → your service **job-scheduler-api** → **Environment** → edit **DATABASE_URL** → paste the full URL with **no leading/trailing spaces** → **Save Changes**. Render will redeploy automatically.
+4. If you use the **Neon SQL Editor** or another client, test the same URL there to confirm it works.
+
 ---
 
 ## Option 2: Fly.io (needs Fly CLI)
