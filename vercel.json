@@ -3,9 +3,6 @@
   "installCommand": "pip install -r requirements.txt",
   "framework": null,
   "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/index"
-    }
+    { "source": "/(.*)", "destination": "/api/index" }
   ]
 }
