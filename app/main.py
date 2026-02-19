@@ -1,14 +1,17 @@
 """FastAPI application entrypoint."""
+import logging
 from pathlib import Path
 
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, Request
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.api.routes import api_router
 from app.core.config import settings
 from app.db.session import init_db
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -23,6 +26,16 @@ app = FastAPI(
     lifespan=lifespan,
 )
 app.include_router(api_router, prefix="/api")
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    """Return JSON for all unhandled errors so the frontend never gets plain-text 500."""
+    logger.exception("Unhandled exception: %s", exc)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"},
+    )
 
 # Frontend: serve static files and app root
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
