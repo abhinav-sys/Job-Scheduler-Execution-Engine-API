@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Job Scheduler – Create & Monitor Jobs</title>
+  <style>
+    :root {
+      --bg: #0f0f12;
+      --surface: #1a1a20;
+      --border: #2d2d35;
+      --text: #e8e8ed;
+      --muted: #8888a0;
+      --accent: #6366f1;
+      --accent-hover: #818cf8;
+      --success: #22c55e;
+      --warn: #eab308;
+      --error: #ef4444;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 1.5rem;
+      line-height: 1.5;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    h1 { font-size: 1.5rem; margin: 0 0 0.5rem; color: var(--text); }
+    .subtitle { color: var(--muted); font-size: 0.9rem; margin-bottom: 1.5rem; }
+    section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+    section h2 { font-size: 1rem; margin: 0 0 0.75rem; color: var(--muted); }
+    label { display: block; margin-bottom: 0.25rem; font-size: 0.85rem; color: var(--muted); }
+    input, select, button {
+      font: inherit;
+      padding: 0.5rem 0.75rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+    }
+    input, select { width: 100%; margin-bottom: 0.75rem; }
+    button {
+      cursor: pointer;
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      margin-right: 0.5rem;
+      margin-top: 0.25rem;
+    }
+    button:hover { background: var(--accent-hover); }
+    button.secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+    .row { display: flex; gap: 1rem; flex-wrap: wrap; }
+    .row > * { flex: 1 1 200px; }
+    .job-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      margin-bottom: 0.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .job-name { font-weight: 600; }
+    .job-meta { font-size: 0.8rem; color: var(--muted); }
+    .status { font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 4px; }
+    .status.SCHEDULED { background: var(--warn); color: #000; }
+    .status.RUNNING { background: var(--accent); color: #fff; }
+    .status.PAUSED { background: var(--muted); color: var(--text); }
+    .status.COMPLETED { background: var(--success); color: #fff; }
+    .status.FAILED { background: var(--error); color: #fff; }
+    .status.CANCELLED { background: var(--muted); color: var(--text); }
+    .job-actions { display: flex; gap: 0.35rem; flex-wrap: wrap; align-items: center; }
+    .job-actions button { margin: 0; padding: 0.35rem 0.6rem; font-size: 0.8rem; }
+    .job-actions button.danger { background: var(--error); }
+    .job-actions button.danger:hover { background: #dc2626; }
+    .job-actions button.secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+    .error-msg { color: var(--error); font-size: 0.85rem; margin-top: 0.25rem; }
+    .result-msg { color: var(--success); font-size: 0.85rem; margin-top: 0.35rem; font-style: italic; max-width: 480px; }
+    .loading { color: var(--muted); }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    #jobList .empty { color: var(--muted); padding: 0.5rem 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Job Scheduler & Execution Engine</h1>
+    <p class="subtitle">Real work: each job either calls your webhook (POST) or fetches a live quote from an API. Worker runs every 5s.</p>
+
+    <section id="createJobSection">
+      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+        <h2 style="margin: 0;">Create a job</h2>
+        <button type="button" id="btnToggleCreateForm" class="secondary">Create job</button>
+      </div>
+      <div id="createJobForm" style="display: none; margin-top: 1rem;">
+        <div class="row">
+          <div>
+            <label>Name</label>
+            <input type="text" id="jobName" placeholder="my-job" />
+          </div>
+          <div>
+            <label>Schedule type</label>
+            <select id="scheduleType">
+              <option value="one_time">One time (run once at a future time)</option>
+              <option value="interval">Interval (repeat every N seconds)</option>
+            </select>
+          </div>
+        </div>
+        <div class="row" id="runAtRow">
+          <div>
+            <label>Run at (ISO datetime, e.g. 2026-12-31T12:00:00Z)</label>
+            <input type="text" id="runAt" placeholder="2026-12-31T12:00:00Z" />
+          </div>
+        </div>
+        <div class="row" id="intervalRow" style="display: none;">
+          <div>
+            <label>Interval (seconds)</label>
+            <input type="number" id="intervalSeconds" placeholder="10" min="1" />
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>Max retries</label>
+            <input type="number" id="maxRetries" value="3" min="0" max="100" />
+          </div>
+          <div style="flex: 1 1 100%;">
+            <label>Webhook URL (optional) — worker POSTs job details here when the job runs</label>
+            <input type="url" id="webhookUrl" placeholder="https://webhook.site/your-id or https://requestbin.com/..." />
+            <p class="job-meta" style="margin: 0.25rem 0 0 0; font-size: 0.8rem;">Paste the exact URL from webhook.site (Your unique URL). If it fails, check the red error under the job in the list below.</p>
+          </div>
+        </div>
+        <button id="btnCreate">Create job</button>
+        <button type="button" id="btnCancelCreate" class="secondary">Cancel</button>
+        <span id="createStatus" class="error-msg"></span>
+      </div>
+    </section>
+
+    <section>
+      <h2>Jobs</h2>
+      <p class="job-meta" style="margin: 0 0 0.5rem 0;">List auto-refreshes every 4 seconds. Filter and manage: Pause, Resume, Cancel, Delete.</p>
+      <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.5rem;">
+        <label for="filterStatus" style="margin: 0;">Filter:</label>
+        <select id="filterStatus" style="width: auto; margin: 0;">
+          <option value="">All</option>
+          <option value="SCHEDULED">Scheduled</option>
+          <option value="PAUSED">Paused</option>
+          <option value="RUNNING">Running</option>
+          <option value="COMPLETED">Completed</option>
+          <option value="FAILED">Failed</option>
+          <option value="CANCELLED">Cancelled</option>
+        </select>
+        <button class="secondary" id="btnRefresh">Refresh now</button>
+        <button type="button" id="btnTestJob" title="Create a 5s-interval job and watch it run">Run test job now</button>
+        <span id="testStatus" class="job-meta"></span>
+      </div>
+      <div id="jobList" class="loading">Loading…</div>
+    </section>
+
+    <p class="subtitle">
+      API docs: <a href="/docs" target="_blank">/docs</a> · Health: <a href="/health" target="_blank">/health</a>
+    </p>
+  </div>
+
+  <script>
+    const API = '/api';
+    const scheduleType = document.getElementById('scheduleType');
+    const runAtRow = document.getElementById('runAtRow');
+    const intervalRow = document.getElementById('intervalRow');
+
+    scheduleType.addEventListener('change', () => {
+      const isInterval = scheduleType.value === 'interval';
+      runAtRow.style.display = isInterval ? 'none' : 'block';
+      intervalRow.style.display = isInterval ? 'block' : 'none';
+    });
+    scheduleType.dispatchEvent(new Event('change'));
+
+    async function createJob() {
+      const name = document.getElementById('jobName').value.trim();
+      const maxRetries = parseInt(document.getElementById('maxRetries').value, 10) || 3;
+      const statusEl = document.getElementById('createStatus');
+      statusEl.textContent = '';
+
+      if (!name) {
+        statusEl.textContent = 'Name is required.';
+        return;
+      }
+
+      const body = { name, schedule_type: scheduleType.value, max_retries: maxRetries };
+      const webhookUrl = document.getElementById('webhookUrl').value.trim();
+      if (webhookUrl) body.payload = { webhook_url: webhookUrl };
+      if (scheduleType.value === 'one_time') {
+        const runAt = document.getElementById('runAt').value.trim();
+        if (!runAt) {
+          statusEl.textContent = 'Run at is required for one-time jobs (e.g. 2026-12-31T12:00:00Z).';
+          return;
+        }
+        body.run_at = runAt;
+      } else {
+        const sec = parseInt(document.getElementById('intervalSeconds').value, 10);
+        if (!sec || sec < 1) {
+          statusEl.textContent = 'Interval seconds must be at least 1.';
+          return;
+        }
+        body.interval_seconds = sec;
+      }
+
+      try {
+        const r = await fetch(API + '/jobs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const data = await r.json();
+        if (!r.ok) {
+          const msg = data.detail?.map?.(d => d.msg).join(' ') || data.detail || 'Request failed';
+          statusEl.textContent = msg;
+          return;
+        }
+        statusEl.textContent = 'Created: ' + data.id;
+        statusEl.style.color = 'var(--success)';
+        document.getElementById('jobName').value = '';
+        createFormEl.style.display = 'none';
+        btnToggleForm.textContent = 'Create job';
+        loadJobs();
+        setTimeout(() => { statusEl.textContent = ''; }, 5000);
+      } catch (e) {
+        statusEl.textContent = 'Error: ' + e.message;
+      }
+    }
+
+    function actionButtons(j) {
+      const id = j.id;
+      const s = j.status;
+      const btns = [];
+      if (s === 'SCHEDULED') {
+        btns.push('<button type="button" class="secondary job-pause" data-id="' + id + '">Pause</button>');
+        btns.push('<button type="button" class="secondary job-cancel" data-id="' + id + '">Cancel</button>');
+      }
+      if (s === 'PAUSED') {
+        btns.push('<button type="button" class="job-resume" data-id="' + id + '">Resume</button>');
+        btns.push('<button type="button" class="secondary job-cancel" data-id="' + id + '">Cancel</button>');
+      }
+      if (s === 'RUNNING') {
+        btns.push('<button type="button" class="secondary job-cancel" data-id="' + id + '">Cancel</button>');
+      }
+      btns.push('<button type="button" class="danger job-delete" data-id="' + id + '" data-name="' + escapeHtml(j.name) + '">Delete</button>');
+      return '<div class="job-actions">' + btns.join('') + '</div>';
+    }
+
+    async function loadJobs() {
+      const el = document.getElementById('jobList');
+      const filter = document.getElementById('filterStatus').value;
+      let url = API + '/jobs?limit=50';
+      if (filter) url += '&status=' + encodeURIComponent(filter);
+      try {
+        const r = await fetch(url);
+        const data = await r.json();
+        if (!r.ok) {
+          el.innerHTML = '<span class="error-msg">Failed to load: ' + (data.detail || r.status) + '</span>';
+          return;
+        }
+        const jobs = data.jobs || [];
+        if (jobs.length === 0) {
+          el.innerHTML = '<div class="empty">No jobs yet. Create one above.</div>';
+          return;
+        }
+        el.innerHTML = jobs.map(j => {
+          const lastExec = j.executions?.length ? j.executions[j.executions.length - 1] : null;
+          const err = lastExec?.status === 'FAILED' ? lastExec.error_message : '';
+          const result = lastExec?.result ? lastExec.result : '';
+          const execCount = (j.executions && j.executions.length) || 0;
+          return '<div class="job-card">' +
+            '<div><span class="job-name">' + escapeHtml(j.name) + '</span>' +
+            '<div class="job-meta">' + j.schedule_type + (j.interval_seconds ? ' every ' + j.interval_seconds + 's' : '') + ' · ' + execCount + ' run(s) · retries ' + j.retry_count + '/' + j.max_retries + '</div>' +
+            (result ? '<div class="result-msg">' + escapeHtml(result) + '</div>' : '') +
+            (err ? '<div class="error-msg">' + escapeHtml(err) + '</div>' : '') + '</div>' +
+            '<div style="display:flex; align-items:center; gap:0.5rem;">' +
+            '<span class="status ' + j.status + '">' + j.status + '</span>' +
+            actionButtons(j) + '</div></div>';
+        }).join('');
+        bindJobActions();
+      } catch (e) {
+        el.innerHTML = '<span class="error-msg">Error: ' + escapeHtml(e.message) + '</span>';
+      }
+    }
+
+    function bindJobActions() {
+      document.getElementById('jobList').querySelectorAll('.job-pause').forEach(btn => {
+        btn.addEventListener('click', () => updateJobStatus(btn.dataset.id, 'PAUSED'));
+      });
+      document.getElementById('jobList').querySelectorAll('.job-resume').forEach(btn => {
+        btn.addEventListener('click', () => updateJobStatus(btn.dataset.id, 'SCHEDULED'));
+      });
+      document.getElementById('jobList').querySelectorAll('.job-cancel').forEach(btn => {
+        btn.addEventListener('click', () => updateJobStatus(btn.dataset.id, 'CANCELLED'));
+      });
+      document.getElementById('jobList').querySelectorAll('.job-delete').forEach(btn => {
+        btn.addEventListener('click', () => deleteJob(btn.dataset.id, btn.dataset.name));
+      });
+    }
+
+    async function updateJobStatus(jobId, status) {
+      try {
+        const r = await fetch(API + '/jobs/' + jobId, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status }),
+        });
+        if (!r.ok) {
+          const data = await r.json();
+          alert(data.detail || r.status);
+          return;
+        }
+        loadJobs();
+      } catch (e) {
+        alert('Error: ' + e.message);
+      }
+    }
+
+    async function deleteJob(jobId, name) {
+      if (!confirm('Delete job “‘ + (name || jobId) + ’”? This cannot be undone.')) return;
+      try {
+        const r = await fetch(API + '/jobs/' + jobId, { method: 'DELETE' });
+        if (!r.ok) {
+          const data = await r.json().catch(() => ({}));
+          alert(data.detail || r.status);
+          return;
+        }
+        loadJobs();
+      } catch (e) {
+        alert('Error: ' + e.message);
+      }
+    }
+
+    function escapeHtml(s) {
+      const div = document.createElement('div');
+      div.textContent = s;
+      return div.innerHTML;
+    }
+
+    async function runTestJob() {
+      const statusEl = document.getElementById('testStatus');
+      statusEl.textContent = 'Creating test job…';
+      try {
+        const name = 'test-' + new Date().toISOString().slice(11, 19).replace(/:/g, '');
+        const r = await fetch(API + '/jobs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, schedule_type: 'interval', interval_seconds: 5, max_retries: 3 }),
+        });
+        const data = await r.json();
+        if (!r.ok) {
+          statusEl.textContent = 'Failed: ' + (data.detail?.map?.(d => d.msg).join(' ') || data.detail || r.status);
+          return;
+        }
+        statusEl.textContent = 'Test job created. Auto-refreshing every 2s for 20s…';
+        statusEl.style.color = 'var(--success)';
+        loadJobs();
+        let count = 0;
+        const iv = setInterval(() => {
+          loadJobs();
+          count += 2;
+          if (count >= 20) {
+            clearInterval(iv);
+            statusEl.textContent = '';
+          }
+        }, 2000);
+      } catch (e) {
+        statusEl.textContent = 'Error: ' + e.message;
+      }
+    }
+
+    document.getElementById('btnCreate').addEventListener('click', createJob);
+    document.getElementById('btnRefresh').addEventListener('click', () => loadJobs());
+    document.getElementById('btnTestJob').addEventListener('click', runTestJob);
+    document.getElementById('filterStatus').addEventListener('change', () => loadJobs());
+
+    const createFormEl = document.getElementById('createJobForm');
+    const btnToggleForm = document.getElementById('btnToggleCreateForm');
+    document.getElementById('btnToggleCreateForm').addEventListener('click', () => {
+      const isHidden = createFormEl.style.display === 'none';
+      createFormEl.style.display = isHidden ? 'block' : 'none';
+      btnToggleForm.textContent = isHidden ? 'Hide form' : 'Create job';
+    });
+    document.getElementById('btnCancelCreate').addEventListener('click', () => {
+      createFormEl.style.display = 'none';
+      btnToggleForm.textContent = 'Create job';
+    });
+
+    loadJobs();
+    setInterval(loadJobs, 4000);
+  </script>
+</body>
+</html>

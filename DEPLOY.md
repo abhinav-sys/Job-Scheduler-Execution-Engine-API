@@ -1,4 +1,57 @@
-# Deploy: Vercel (API) + Neon (DB) + Railway (Worker)
+# Deploy options
+
+You can either:
+- **Option A – Full on Railway** (API + Worker on Railway, DB on Neon) — simpler, one platform.
+- **Option B – Hybrid** (API on Vercel, Worker on Railway, DB on Neon) — API on Vercel free tier.
+
+---
+
+# Option A: Full deploy on Railway (recommended)
+
+Everything runs on Railway except the database (you keep Neon).
+
+## 1. Neon database
+
+Use your Neon URL with the **async** driver for `DATABASE_URL`:
+```text
+postgresql+asyncpg://neondb_owner:YOUR_PASSWORD@ep-blue-cake-air88kje-pooler.c-4.us-east-1.aws.neon.tech/neondb?sslmode=require
+```
+
+## 2. Railway project with two services
+
+1. Go to [railway.app](https://railway.app) → **New Project**.
+2. **Deploy from GitHub** → select `abhinav-sys/Job-Scheduler-Execution-Engine-API`.
+3. You’ll get **one service** (the API). Add the **second** (worker) next.
+
+## 3. Configure the API service
+
+1. Click the **first service** (your repo).
+2. **Variables** → add:
+   - `DATABASE_URL` = your async Neon URL (above).
+3. **Settings** → **Build**:
+   - Build Command: `pip install -r requirements.txt` (or leave default if it installs deps).
+   - Start Command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+   (Railway sets `PORT`; use it so the API listens on the right port.)
+4. **Settings** → generate a **domain** (e.g. `your-api.up.railway.app`) so you can call the API.
+
+## 4. Add the Worker service
+
+1. In the same project, click **+ New** → **GitHub Repo** → select the **same** repo again.
+2. You now have **two services** from the same repo.
+3. Open the **second** service (the worker).
+4. **Variables** → add the **same** `DATABASE_URL` (async Neon URL).
+5. **Settings** → Start Command: `python -m app.worker.main`
+6. No need to expose a domain for the worker; it only talks to the DB.
+
+## 5. Create tables (first time)
+
+Open your API URL (e.g. `https://your-api.up.railway.app/health` or `/docs`). The app runs `init_db()` on startup and creates tables in Neon.
+
+Done. API and worker both run on Railway and use Neon.
+
+---
+
+# Option B: Vercel (API) + Neon (DB) + Railway (Worker)
 
 ## 1. Neon database (you have the URL)
 

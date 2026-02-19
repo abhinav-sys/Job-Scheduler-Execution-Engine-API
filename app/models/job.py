@@ -2,7 +2,7 @@
 import enum
 import uuid
 from datetime import datetime
-from typing import Any
+from typing import Any, Dict, Optional
 
 from sqlalchemy import DateTime, Enum, ForeignKey, Integer, Text, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
@@ -19,8 +19,10 @@ class ScheduleType(str, enum.Enum):
 class JobStatus(str, enum.Enum):
     SCHEDULED = "SCHEDULED"
     RUNNING = "RUNNING"
+    PAUSED = "PAUSED"
     COMPLETED = "COMPLETED"
     FAILED = "FAILED"
+    CANCELLED = "CANCELLED"
 
 
 class ExecutionStatus(str, enum.Enum):
@@ -35,12 +37,12 @@ class Job(Base):
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     name: Mapped[str] = mapped_column(Text, nullable=False, index=True)
-    payload: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    payload: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSONB, nullable=True)
     schedule_type: Mapped[ScheduleType] = mapped_column(
         Enum(ScheduleType), nullable=False
     )
-    run_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    interval_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    run_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    interval_seconds: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     max_retries: Mapped[int] = mapped_column(Integer, nullable=False, default=3)
     status: Mapped[JobStatus] = mapped_column(
         Enum(JobStatus), nullable=False, default=JobStatus.SCHEDULED, index=True
@@ -75,12 +77,13 @@ class JobExecution(Base):
     started_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
-    finished_at: Mapped[datetime | None] = mapped_column(
+    finished_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
     status: Mapped[ExecutionStatus] = mapped_column(
         Enum(ExecutionStatus), nullable=False
     )
-    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    result: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     job: Mapped["Job"] = relationship("Job", back_populates="executions")

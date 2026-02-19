@@ -7,9 +7,7 @@ Create Date: 2025-02-19
 """
 from typing import Sequence, Union
 
-import sqlalchemy as sa
 from alembic import op
-from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = "001"
@@ -19,49 +17,51 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.create_table(
-        "jobs",
-        sa.Column("id", postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column("name", sa.Text(), nullable=False),
-        sa.Column("payload", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
-        sa.Column(
-            "schedule_type",
-            sa.Enum("one_time", "interval", name="scheduletype"),
-            nullable=False,
-        ),
-        sa.Column("run_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("interval_seconds", sa.Integer(), nullable=True),
-        sa.Column("max_retries", sa.Integer(), nullable=False),
-        sa.Column(
-            "status",
-            sa.Enum("SCHEDULED", "RUNNING", "COMPLETED", "FAILED", name="jobstatus"),
-            nullable=False,
-        ),
-        sa.Column("retry_count", sa.Integer(), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-        sa.Column("version", sa.Integer(), nullable=False),
-        sa.PrimaryKeyConstraint("id"),
-    )
-    op.create_index(op.f("ix_jobs_name"), "jobs", ["name"], unique=False)
-    op.create_index(op.f("ix_jobs_status"), "jobs", ["status"], unique=False)
-
-    op.create_table(
-        "job_executions",
-        sa.Column("id", postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column("job_id", postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column("attempt_number", sa.Integer(), nullable=False),
-        sa.Column("started_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-        sa.Column("finished_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column(
-            "status",
-            sa.Enum("SUCCESS", "FAILED", name="executionstatus"),
-            nullable=False,
-        ),
-        sa.Column("error_message", sa.Text(), nullable=True),
-        sa.ForeignKeyConstraint(["job_id"], ["jobs.id"], ondelete="CASCADE"),
-        sa.PrimaryKeyConstraint("id"),
-    )
+    # Create enum types only if they don't exist (e.g. API may have created them via create_all)
+    op.execute("""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'scheduletype') THEN
+                CREATE TYPE scheduletype AS ENUM ('one_time', 'interval');
+            END IF;
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'jobstatus') THEN
+                CREATE TYPE jobstatus AS ENUM ('SCHEDULED', 'RUNNING', 'COMPLETED', 'FAILED');
+            END IF;
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'executionstatus') THEN
+                CREATE TYPE executionstatus AS ENUM ('SUCCESS', 'FAILED');
+            END IF;
+        END$$;
+    """)
+    # Create tables with raw SQL (one statement per op.execute for asyncpg; IF NOT EXISTS for idempotency)
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS jobs (
+            id UUID NOT NULL PRIMARY KEY,
+            name TEXT NOT NULL,
+            payload JSONB,
+            schedule_type scheduletype NOT NULL,
+            run_at TIMESTAMP WITH TIME ZONE,
+            interval_seconds INTEGER,
+            max_retries INTEGER NOT NULL,
+            status jobstatus NOT NULL,
+            retry_count INTEGER NOT NULL,
+            created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+            updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+            version INTEGER NOT NULL
+        )
+    """)
+    op.execute("CREATE INDEX IF NOT EXISTS ix_jobs_name ON jobs (name)")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_jobs_status ON jobs (status)")
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS job_executions (
+            id UUID NOT NULL PRIMARY KEY,
+            job_id UUID NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+            attempt_number INTEGER NOT NULL,
+            started_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+            finished_at TIMESTAMP WITH TIME ZONE,
+            status executionstatus NOT NULL,
+            error_message TEXT
+        )
+    """)
 
 
 def downgrade() -> None:

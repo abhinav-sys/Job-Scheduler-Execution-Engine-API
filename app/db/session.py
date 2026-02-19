@@ -3,14 +3,14 @@ from collections.abc import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from app.core.config import settings
+from app.core.config import get_database_url
 from app.models.base import Base
 
-# Use sync URL for Alembic; async for app
-DATABASE_URL_SYNC = settings.DATABASE_URL.replace("+asyncpg", "")
+# Normalized URL (postgres:// → postgresql+asyncpg://) for Render/Neon
+_db_url = get_database_url()
 
 engine = create_async_engine(
-    settings.DATABASE_URL,
+    _db_url,
     echo=False,
     pool_pre_ping=True,
     pool_size=5,

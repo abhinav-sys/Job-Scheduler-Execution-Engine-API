@@ -1,0 +1,24 @@
+# Fly.io: WORKER only. Deploy with: fly deploy --config fly.worker.toml
+# 1. fly launch --no-deploy --config fly.worker.toml  (say no to Postgres)
+# 2. fly secrets set DATABASE_URL="postgresql://..."  (your Neon URL)
+# 3. fly deploy --config fly.worker.toml
+
+app = "job-scheduler-worker"
+
+[build]
+  dockerfile = "Dockerfile.worker"
+
+[env]
+  PORT = "8080"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[vm]]
+  memory = "256mb"
+  cpu_kind = "shared"
+  cpus = 1

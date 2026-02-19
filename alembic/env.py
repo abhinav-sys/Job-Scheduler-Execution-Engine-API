@@ -6,7 +6,7 @@ from alembic import context
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from app.core.config import settings
+from app.core.config import get_database_url
 from app.models.base import Base
 from app.models.job import Job, JobExecution  # noqa: F401 - register models
 
@@ -14,8 +14,8 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Use async URL for run_migrations_online (async_engine_from_config)
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+# Normalized URL (postgres:// → postgresql+asyncpg) for Render/Neon
+config.set_main_option("sqlalchemy.url", get_database_url())
 
 target_metadata = Base.metadata
 

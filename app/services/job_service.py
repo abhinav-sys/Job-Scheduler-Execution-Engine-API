@@ -1,4 +1,5 @@
 """Job CRUD and business logic."""
+from typing import Optional
 from uuid import UUID
 
 from sqlalchemy import func, select
@@ -26,7 +27,7 @@ class JobService:
         await self.session.refresh(job)
         return job
 
-    async def get_by_id(self, job_id: UUID) -> Job | None:
+    async def get_by_id(self, job_id: UUID) -> Optional[Job]:
         result = await self.session.execute(
             select(Job).where(Job.id == job_id)
         )
@@ -34,8 +35,8 @@ class JobService:
 
     async def list_jobs(
         self,
-        status: JobStatus | None = None,
-        schedule_type: ScheduleType | None = None,
+        status: Optional[JobStatus] = None,
+        schedule_type: Optional[ScheduleType] = None,
         limit: int = 100,
         offset: int = 0,
     ) -> tuple[list[Job], int]:
@@ -52,3 +53,20 @@ class JobService:
         result = await self.session.execute(q)
         jobs = list(result.scalars().all())
         return jobs, total_count
+
+    async def update_status(self, job_id: UUID, new_status: JobStatus) -> Optional[Job]:
+        job = await self.get_by_id(job_id)
+        if job is None:
+            return None
+        job.status = new_status
+        await self.session.flush()
+        await self.session.refresh(job)
+        return job
+
+    async def delete(self, job_id: UUID) -> bool:
+        job = await self.get_by_id(job_id)
+        if job is None:
+            return False
+        await self.session.delete(job)
+        await self.session.flush()
+        return True

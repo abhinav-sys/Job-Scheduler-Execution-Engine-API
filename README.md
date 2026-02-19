@@ -56,14 +56,15 @@ See **[DEPLOY.md](DEPLOY.md)** for step-by-step Vercel + Neon + Railway.
 docker-compose up --build
 ```
 
-- API: http://localhost:8000  
-- Docs: http://localhost:8000/docs  
-- Health: http://localhost:8000/health  
+- **Frontend (web UI):** http://localhost:8001 — create jobs, view list and status.  
+- API: http://localhost:8001 (port 8001 to avoid conflict with other services; change in `docker-compose.yml` if needed)  
+- Docs: http://localhost:8001/docs  
+- Health: http://localhost:8001/health  
 
 Create a one-time job:
 
 ```bash
-curl -X POST http://localhost:8000/api/jobs \
+curl -X POST http://localhost:8001/api/jobs \
   -H "Content-Type: application/json" \
   -d '{"name":"my-job","schedule_type":"one_time","run_at":"2026-12-31T12:00:00Z","max_retries":3}'
 ```
@@ -71,10 +72,17 @@ curl -X POST http://localhost:8000/api/jobs \
 Create an interval job (runs every 10 seconds):
 
 ```bash
-curl -X POST http://localhost:8000/api/jobs \
+curl -X POST http://localhost:8001/api/jobs \
   -H "Content-Type: application/json" \
   -d '{"name":"interval-job","schedule_type":"interval","interval_seconds":10,"max_retries":2}'
 ```
+
+### Live test (recommended)
+
+1. Open **http://localhost:8001** (frontend).
+2. Click **Run test job now**. A 5-second interval job is created and the list auto-refreshes every 2s for 20s.
+3. Watch the new job move from **SCHEDULED** to **COMPLETED** (or **RUNNING** briefly). Run count increases each cycle.
+4. By default the worker uses **0% simulated failure** so demos succeed; set `WORKER_FAILURE_PROBABILITY=0.3` (e.g. in `.env` or Docker) to test retries.
 
 ### Running multiple workers
 
@@ -156,7 +164,7 @@ Only one worker will process a given job at a time thanks to **row-level locking
 
 - Polls the DB every **5 seconds** (configurable: `WORKER_POLL_INTERVAL_SECONDS`).
 - Uses **SELECT ... FOR UPDATE SKIP LOCKED** and processes **one job per poll**.
-- Simulates work with a random sleep of 1–3 seconds and a **30% random failure** rate (configurable: `WORKER_FAILURE_PROBABILITY`).
+- Simulates work with a random sleep of 1–3 seconds. **Failure rate** is configurable: `WORKER_FAILURE_PROBABILITY` (default **0** for demos; **0.3** to test retries).
 - **Retries**: On failure, creates a `JobExecution` (FAILED), increments `retry_count`, and sets job back to `SCHEDULED` until `retry_count >= max_retries`, then sets job to `FAILED`.
 - **Interval jobs**: On success, sets next `run_at = now + interval_seconds` and status back to `SCHEDULED`.
 - **Crash recovery**: Before each poll, resets `RUNNING` jobs older than `WORKER_STALE_RUNNING_MINUTES` to `SCHEDULED`.
@@ -212,7 +220,7 @@ README.md
 | `WORKER_STALE_RUNNING_MINUTES` | 10 | Minutes after which RUNNING is reset to SCHEDULED |
 | `WORKER_EXECUTION_MIN_SLEEP` | 1 | Min simulated execution time (seconds) |
 | `WORKER_EXECUTION_MAX_SLEEP` | 3 | Max simulated execution time (seconds) |
-| `WORKER_FAILURE_PROBABILITY` | 0.3 | Simulated failure rate (0–1) |
+| `WORKER_FAILURE_PROBABILITY` | 0 | Simulated failure rate (0–1); use 0.3 to test retries |
 
 ---
 
