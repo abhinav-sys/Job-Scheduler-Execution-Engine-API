@@ -16,7 +16,7 @@ Use these so you don’t pay anything.
 
 ## 1. API on Vercel (free)
 
-1. Go to [vercel.com](https://vercel.com) → **Add New** → **Project** → import `abhinav-sys/Job-Scheduler-Execution-Engine-API`.
+1. Go to [vercel.com](https://vercel.com) → **Add New** → **Project** → import your repository.
 2. **Environment Variables** → add:
    - `DATABASE_URL` = your Neon URL with async driver:
    ```text
@@ -33,7 +33,7 @@ Use these so you don’t pay anything.
 
 1. Go to [render.com](https://render.com) → Sign in with GitHub.
 2. **New +** → **Background Worker**.
-3. Connect repo: `abhinav-sys/Job-Scheduler-Execution-Engine-API` (same as your API).
+3. Connect the same repo as your API.
 4. **Environment** → add variable:
    - Key: `DATABASE_URL`  
    - Value: **exactly the same** Neon URL as your API (so the worker sees the same jobs).
@@ -105,8 +105,8 @@ Oracle’s Always Free tier can give a small VM. **Note:** Oracle may ask for a 
    ```bash
    sudo apt update -y
    sudo apt install -y python3 python3-pip python3-venv git
-   git clone https://github.com/abhinav-sys/Job-Scheduler-Execution-Engine-API.git
-   cd Job-Scheduler-Execution-Engine-API
+   git clone https://github.com/YOUR_ORG/YOUR_REPO.git
+   cd YOUR_REPO
    python3 -m venv .venv
    source .venv/bin/activate
    pip install -r requirements.txt

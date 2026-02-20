@@ -20,7 +20,7 @@ postgresql+asyncpg://neondb_owner:YOUR_PASSWORD@ep-blue-cake-air88kje-pooler.c-4
 ## 2. Railway project with two services
 
 1. Go to [railway.app](https://railway.app) → **New Project**.
-2. **Deploy from GitHub** → select `abhinav-sys/Job-Scheduler-Execution-Engine-API`.
+2. **Deploy from GitHub** → select your repository.
 3. You’ll get **one service** (the API). Add the **second** (worker) next.
 
 ## 3. Configure the API service
@@ -82,7 +82,7 @@ git init
 git add .
 git commit -m "Job Scheduler API + Worker + Docker"
 git branch -M main
-git remote add origin https://github.com/abhinav-sys/Job-Scheduler-Execution-Engine-API.git
+git remote add origin https://github.com/YOUR_ORG/YOUR_REPO.git
 git push -u origin main
 ```
 
@@ -98,7 +98,7 @@ git push -u origin main
 ## 3. Deploy API to Vercel
 
 1. Go to [vercel.com](https://vercel.com) and sign in.
-2. **Add New** → **Project** → **Import** your repo: `abhinav-sys/Job-Scheduler-Execution-Engine-API`.
+2. **Add New** → **Project** → **Import** your repo.
 3. **Environment Variables** (before deploying):
    - Name: `DATABASE_URL`
    - Value: your **async** Neon URL (`postgresql+asyncpg://...`).
@@ -136,7 +136,7 @@ alembic upgrade head
 The **worker cannot run on Vercel** (no long-running processes). Deploy it to **Railway** (or Render / EC2):
 
 1. Go to [railway.app](https://railway.app), sign in, **New Project**.
-2. **Deploy from GitHub** → select `Job-Scheduler-Execution-Engine-API`.
+2. **Deploy from GitHub** → select your repository.
 3. **Variables**: add `DATABASE_URL` with the **same** async Neon URL as on Vercel.
 4. **Settings** → set **Start Command** to:
    ```text

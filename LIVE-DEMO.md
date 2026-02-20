@@ -2,11 +2,13 @@
 
 ## Links
 
+After deployment, replace with your live base URL (e.g. `https://your-app.onrender.com`):
+
 | | |
 |---|---|
-| **App (UI)** | https://job-scheduler-execution-engine-api.onrender.com/ |
-| **API docs** | https://job-scheduler-execution-engine-api.onrender.com/docs |
-| **Health** | https://job-scheduler-execution-engine-api.onrender.com/health |
+| **App (UI)** | `BASE_URL/` |
+| **API docs** | `BASE_URL/docs` |
+| **Health** | `BASE_URL/health` |
 
 ---
 

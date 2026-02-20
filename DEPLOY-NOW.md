@@ -1,19 +1,19 @@
 # Deploy in one go (no CLI)
 
-Do this once to get a **public URL** (e.g. `https://job-scheduler-api.onrender.com`).
+Do this once to get a **public URL** (e.g. `https://your-app.onrender.com`).
 
 ---
 
 ## Option 1: Render (recommended – from browser)
 
 1. **Push this repo to GitHub** (if not already):  
-   `abhinav-sys/Job-Scheduler-Execution-Engine-API`
+   your repository name
 
 2. Open **https://render.com** and sign in (GitHub is fine).
 
 3. Click **New +** → **Blueprint**.
 
-4. Connect the repo **Job-Scheduler-Execution-Engine-API** (or “Configure account” and select it).
+4. Connect the repo **your repository** (or “Configure account” and select it).
 
 5. Render will read `render.yaml` and show one service: **job-scheduler-api**.  
    Add the required env var:
@@ -23,7 +23,7 @@ Do this once to get a **public URL** (e.g. `https://job-scheduler-api.onrender.c
 6. Click **Apply**.
 
 7. Wait for the first deploy to finish (build + start). Your app will be at:
-   - **https://job-scheduler-api.onrender.com** (or the URL Render shows).
+   - **https://your-app.onrender.com** (or the URL Render shows).
 
 8. Open that URL in the browser: you should see the Job Scheduler UI.  
    - `/docs` → API docs  

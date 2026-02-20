@@ -4,9 +4,9 @@ Production-grade job scheduler with FastAPI, PostgreSQL, SQLAlchemy 2.0 (async),
 
 | | |
 |---|---|
-| **Live demo** | [https://job-scheduler-execution-engine-api.onrender.com](https://job-scheduler-execution-engine-api.onrender.com) |
-| **API docs** | [/docs](https://job-scheduler-execution-engine-api.onrender.com/docs) · **Health** [/health](https://job-scheduler-execution-engine-api.onrender.com/health) |
-| **Repo** | [GitHub](https://github.com/abhinav-sys/Job-Scheduler-Execution-Engine-API) |
+| **Live demo** | Set after deploy (e.g. `https://your-app.onrender.com`) |
+| **API docs** | `/docs` · **Health** `/health` |
+| **Repo** | Clone and set `git remote` to your repository |
 
 Jobs run via GitHub Actions (cron every 5 min) or in-process worker; see [LIVE-DEPLOYMENT.md](LIVE-DEPLOYMENT.md) and [LIVE-DEMO.md](LIVE-DEMO.md).
 
@@ -39,11 +39,11 @@ Client → FastAPI API → PostgreSQL
    ```
    (Same URL with `postgresql+asyncpg` instead of `postgresql`.)
 
-2. **Push to GitHub** (e.g. repo: `abhinav-sys/Job-Scheduler-Execution-Engine-API`):
+2. **Push to GitHub** (use your repo URL):
    ```bash
    git init && git add . && git commit -m "Initial commit"
    git branch -M main
-   git remote add origin https://github.com/abhinav-sys/Job-Scheduler-Execution-Engine-API.git
+   git remote add origin https://github.com/YOUR_ORG/YOUR_REPO.git
    git push -u origin main
    ```
 

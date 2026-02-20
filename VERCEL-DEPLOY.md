@@ -7,10 +7,10 @@ If your build log shows **Commit: 5225eba** instead of the latest, Vercel is not
 ### 1. Connect GitHub (if not already)
 
 1. Vercel dashboard → your project → **Settings** → **Git**.
-2. Under **Connected Git Repository**, it should show: `abhinav-sys/Job-Scheduler-Execution-Engine-API`.
+2. Under **Connected Git Repository**, it should show your connected repository.
 3. If it says **No Git Repository** or a different repo:
    - Click **Connect Git Repository**.
-   - Choose **GitHub** → select **abhinav-sys/Job-Scheduler-Execution-Engine-API**.
+   - Choose **GitHub** → select your repository.
    - **Production Branch**: set to **main** → Save.
 
 ### 2. Deploy the latest commit

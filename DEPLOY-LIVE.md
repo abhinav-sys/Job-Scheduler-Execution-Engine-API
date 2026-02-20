@@ -56,7 +56,7 @@ The repo has two Fly configs:
 ### Option A: Deploy the API from the Fly dashboard
 
 1. Go to [fly.io/dashboard](https://fly.io/dashboard) → **Launch an App from GitHub**.
-2. Select repo **abhinav-sys/Job-Scheduler-Execution-Engine-API**, branch **main**.
+2. Select your repo and branch (e.g. **main**).
 3. App name: e.g. **job-scheduler-execution-engine-api** (or leave default).
 4. Region: e.g. **ams** (Amsterdam).
 5. **Internal port:** **8080** (the Dockerfile uses the `PORT` env).

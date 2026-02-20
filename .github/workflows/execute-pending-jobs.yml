@@ -1,5 +1,5 @@
 # Cron: trigger execution of pending jobs on the live API (Neon + Render, no paid worker).
-# Runs every 5 minutes. Set GitHub repo secret CRON_SECRET and repo variable API_URL (optional).
+# Runs every 5 minutes. Set GitHub repo secret CRON_SECRET and repo variable API_URL (your live API base URL).
 name: Execute pending jobs
 
 on:
@@ -17,7 +17,8 @@ jobs:
           API_URL: ${{ vars.API_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
-          API_URL="${API_URL:-https://job-scheduler-execution-engine-api.onrender.com}"
+          API_URL="${API_URL}"
+          if [ -z "$API_URL" ]; then echo "::error::Set API_URL (repo variable or env) to your live API base URL."; exit 1; fi
           if [ -z "$CRON_SECRET" ]; then
             echo "::warning::CRON_SECRET not set. Add it in repo Settings → Secrets and variables → Actions."
             exit 0
