@@ -1,8 +1,14 @@
 # Job Scheduler & Execution Engine
 
-Production-grade job scheduler with FastAPI, PostgreSQL, SQLAlchemy 2.0 (async), Alembic, and Docker. Separate **API** and **worker** services with concurrency-safe execution and crash recovery.
+Production-grade job scheduler with FastAPI, PostgreSQL, SQLAlchemy 2.0 (async), Alembic, and Docker. Separate **API** and **worker** with concurrency-safe execution and crash recovery.
 
-**Submitting to a company?** See **[SUBMISSION.md](SUBMISSION.md)** and **[SUBMISSION-CHECKLIST.md](SUBMISSION-CHECKLIST.md)**. Option A: GitHub Actions cron (free) calls `POST /api/cron/execute-pending-jobs` every 5 min. Option B: `RUN_WORKER=true` on Render runs API + worker in one service.
+| | |
+|---|---|
+| **Live demo** | [https://job-scheduler-execution-engine-api.onrender.com](https://job-scheduler-execution-engine-api.onrender.com) |
+| **API docs** | [/docs](https://job-scheduler-execution-engine-api.onrender.com/docs) · **Health** [/health](https://job-scheduler-execution-engine-api.onrender.com/health) |
+| **Repo** | [GitHub](https://github.com/abhinav-sys/Job-Scheduler-Execution-Engine-API) |
+
+Jobs run via GitHub Actions (cron every 5 min) or in-process worker; see [LIVE-DEPLOYMENT.md](LIVE-DEPLOYMENT.md) and [LIVE-DEMO.md](LIVE-DEMO.md).
 
 ## Architecture
 

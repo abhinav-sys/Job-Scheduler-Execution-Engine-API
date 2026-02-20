@@ -2,7 +2,7 @@
 
 Use these so you don’t pay anything.
 
-**Submitting so the company sees workers live?** Two free options (no paid worker, no card): **(1)** **GitHub Actions cron** — set `CRON_SECRET` on Render and in GitHub Actions secrets; the workflow calls `POST /api/cron/execute-pending-jobs` every 5 min. **(2)** **RUN_WORKER=true** on Render — same service runs API + worker. See **[SUBMISSION.md](SUBMISSION.md)**.
+**Live jobs (no paid worker):** **(1)** GitHub Actions cron — set `CRON_SECRET` on Render and in GitHub Actions. **(2)** `RUN_WORKER=true` on Render. See [LIVE-DEPLOYMENT.md](LIVE-DEPLOYMENT.md).
 
 **No payment card?** Many cloud workers (Fly, Render, Oracle) can ask for a card. The **simplest option with no card** is to **run the worker on your own PC** (section 5) — free, no sign-up, same Neon DB. Jobs run whenever the worker is running on your machine.
 
