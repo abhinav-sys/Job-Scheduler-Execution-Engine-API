@@ -26,16 +26,17 @@ Use this to confirm everything is set and to show evaluators that jobs run in pr
 ## Quick test (you or evaluators)
 
 1. Open the **App** URL above.
-2. Create a job: e.g. **Interval**, every 5 seconds, name "demo-job".
-3. **Option A – wait:** Within about **5 minutes** the workflow runs and the job executes (run count increases).
-4. **Option B – run now:** In GitHub go to **Actions** → **Execute pending jobs** → **Run workflow**. Wait ~30 seconds, then refresh the app; the job should have run.
+2. **To see webhook.site ping:** Go to [webhook.site](https://webhook.site), copy your unique URL. In the app, create a job: **Interval** (e.g. 5s), add the webhook URL in the "Webhook URL" field. When the job runs, webhook.site will show the POST.
+3. **To see realtime quotes:** Create a job **without** a webhook URL; when it runs, the worker fetches a live quote and stores it (visible in job executions/result).
+4. **Trigger execution:** The workflow runs every 5 minutes. To run **now**: GitHub → **Actions** → **Execute pending jobs** → **Run workflow**. Wait ~1 minute (Render may cold-start), then refresh the app — run count should increase and webhook.site will show the request.
 
 ---
 
 ## If jobs don’t run
 
-- **GitHub:** Settings → Secrets and variables → Actions → confirm `CRON_SECRET` is set.
-- **Render:** Environment → confirm `CRON_SECRET` matches the GitHub secret exactly (same value).
-- **Actions:** Open the latest **Execute pending jobs** run; check the log for "Response (200)" and "jobs_processed".
+- **Run the workflow manually:** Actions → **Execute pending jobs** → **Run workflow**. Wait 1–2 min (first run may wake Render from cold start), then refresh the app.
+- **GitHub:** Settings → Secrets and variables → Actions → confirm `CRON_SECRET` is set (same as on Render).
+- **Render:** Environment → confirm `CRON_SECRET` matches exactly (e.g. `Abhi@123`). No extra spaces.
+- **Actions log:** Open the latest **Execute pending jobs** run. You should see `Response (200): {"ok":true,"stale_reset":0,"jobs_processed":1}` (or similar). If you see 401, the secret doesn’t match. If you see timeout, run the workflow again (second attempt retries after 55s).
 
 You’re ready to submit.

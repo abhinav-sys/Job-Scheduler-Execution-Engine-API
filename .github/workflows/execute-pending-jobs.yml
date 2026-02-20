@@ -22,22 +22,35 @@ jobs:
             echo "::warning::CRON_SECRET not set. Add it in repo Settings → Secrets and variables → Actions."
             exit 0
           fi
-          resp=$(curl -s -w "\n%{http_code}" -X POST \
-            "$API_URL/api/cron/execute-pending-jobs" \
-            -H "X-Cron-Secret: $CRON_SECRET" \
-            -H "Content-Type: application/json")
-          code=$(echo "$resp" | tail -n1)
-          body=$(echo "$resp" | sed '$d')
-          echo "Response ($code): $body"
-          if [ "$code" = "401" ]; then
-            echo "::error::Invalid CRON_SECRET. Ensure Render env CRON_SECRET matches GitHub secret."
-            exit 1
-          fi
-          if [ "$code" = "503" ]; then
-            echo "::warning::Cron not configured on API (CRON_SECRET not set in Render)."
-            exit 0
-          fi
-          if [ "$code" -ge 400 ]; then
-            echo "::error::Request failed with $code"
-            exit 1
-          fi
+          # Render free tier can cold-start in ~50s; use long timeout and retry so cron succeeds
+          for attempt in 1 2; do
+            if [ "$attempt" -eq 2 ]; then
+              echo "Cold start? Waiting 55s then retrying..."
+              sleep 55
+            fi
+            resp=$(curl -s -w "\n%{http_code}" --max-time 90 -X POST \
+              "$API_URL/api/cron/execute-pending-jobs" \
+              -H "X-Cron-Secret: $CRON_SECRET" \
+              -H "Content-Type: application/json") || true
+            code=$(echo "$resp" | tail -n1)
+            body=$(echo "$resp" | sed '$d')
+            echo "Response ($code): $body"
+            if [ "$code" = "200" ] || [ "$code" = "201" ]; then
+              echo "Jobs processed. ok=true"
+              exit 0
+            fi
+            if [ "$code" = "401" ]; then
+              echo "::error::Invalid CRON_SECRET. Ensure Render env CRON_SECRET matches GitHub secret."
+              exit 1
+            fi
+            if [ "$code" = "503" ]; then
+              echo "::warning::Cron not configured on API (CRON_SECRET not set in Render)."
+              exit 0
+            fi
+            if [ "$code" != "000" ] && [ -n "$code" ]; then
+              echo "::error::Request failed with $code"
+              exit 1
+            fi
+          done
+          echo "::error::Request timed out (Render may be cold). Run workflow again or check Render logs."
+          exit 1
