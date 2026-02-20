@@ -22,5 +22,6 @@ COPY . .
 RUN useradd -m appuser && chown -R appuser:appuser /app
 USER appuser
 
-# Default: run API; use PORT env (Fly.io uses 8080)
-CMD ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# Start script: if RUN_WORKER=true, runs worker + API in one container (for demo/submission)
+RUN chmod +x /app/scripts/start-api-with-worker.sh
+CMD ["sh", "-c", "./scripts/start-api-with-worker.sh"]

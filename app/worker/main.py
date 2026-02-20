@@ -177,6 +177,39 @@ async def run_crash_recovery(session: AsyncSession) -> None:
     await session.commit()
 
 
+async def run_execute_pending_jobs(max_jobs: int = 10) -> Tuple[int, int]:
+    """
+    One-shot: run crash recovery then process up to max_jobs pending jobs.
+    Used by POST /api/cron/execute-pending-jobs (GitHub Actions cron).
+    Returns (stale_reset_count, jobs_processed_count).
+    """
+    stale_reset = 0
+    async with async_session_factory() as session:
+        try:
+            stale_reset = await reset_stale_running_jobs(session)
+            await session.commit()
+            if stale_reset:
+                print(f"Crash recovery: reset {stale_reset} stale RUNNING job(s) to SCHEDULED", flush=True)
+        except Exception:
+            await session.rollback()
+            raise
+
+    processed = 0
+    for _ in range(max_jobs):
+        async with async_session_factory() as session:
+            try:
+                did_one = await process_one_job(session)
+                if did_one:
+                    await session.commit()
+                    processed += 1
+                else:
+                    break
+            except Exception:
+                await session.rollback()
+                raise
+    return stale_reset, processed
+
+
 async def worker_loop() -> None:
     while True:
         async with async_session_factory() as session:
@@ -213,7 +246,8 @@ def _run_health_server(port: int) -> None:
     server.serve_forever()
 
 def main() -> None:
-    port = int(os.environ.get("PORT", "8080"))
+    # When running in same container as API (RUN_WORKER=true), use different port so API keeps PORT
+    port = int(os.environ.get("WORKER_HEALTH_PORT", os.environ.get("PORT", "8080")))
     t = threading.Thread(target=_run_health_server, args=(port,), daemon=True)
     t.start()
     print("Worker started (poll every %s s, stale threshold %s min, health on :%s)" % (POLL_INTERVAL, STALE_MINUTES, port), flush=True)

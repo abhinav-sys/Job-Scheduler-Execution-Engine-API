@@ -1,0 +1,9 @@
+GitHub Actions cron (Option A) – one thing to do on Render:
+
+1. Open Render Dashboard → your Web Service (job-scheduler-api).
+2. Environment → Add variable:
+   Key:   CRON_SECRET
+   Value: (same as your GitHub secret, e.g. Abhi@123)
+3. Save. Render will redeploy.
+
+After that, the workflow runs every 5 min and jobs will execute on the live site.

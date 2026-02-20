@@ -1,4 +1,5 @@
 # Deploy to Render: connect this repo at render.com → New → Blueprint → add DATABASE_URL (your Neon URL)
+# Two services: Web (API + UI) and Background Worker (runs scheduled jobs).
 services:
   - type: web
     runtime: docker
@@ -10,3 +11,12 @@ services:
       - key: DATABASE_URL
         sync: false
     healthCheckPath: /health
+
+  - type: worker
+    name: job-scheduler-worker
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m app.worker.main
+    envVars:
+      - key: DATABASE_URL
+        sync: false

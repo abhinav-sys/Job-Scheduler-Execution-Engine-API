@@ -2,6 +2,8 @@
 
 Production-grade job scheduler with FastAPI, PostgreSQL, SQLAlchemy 2.0 (async), Alembic, and Docker. Separate **API** and **worker** services with concurrency-safe execution and crash recovery.
 
+**Submitting to a company?** To show evaluators that workers run in production on your live site (no extra service or card), see **[SUBMISSION.md](SUBMISSION.md)** — add `RUN_WORKER=true` to your Render (or Docker) env so the same service runs both API and worker.
+
 ## Architecture
 
 ```

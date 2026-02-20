@@ -50,6 +50,9 @@ class Settings(BaseSettings):
     API_VERSION: str = "1.0.0"
     DEBUG: bool = False  # If True, 500 responses include error detail (set in Vercel for debugging)
 
+    # Cron (GitHub Actions → POST /api/cron/execute-pending-jobs). Set in Render; add same value as GitHub secret CRON_SECRET.
+    CRON_SECRET: str = ""
+
 
 @lru_cache
 def get_settings() -> Settings:
